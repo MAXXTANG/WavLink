@@ -1,0 +1,1430 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>WavLink — Studio HAN</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.0/Sortable.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/lamejs@1.2.1/lame.min.js"></script>
+<style>
+/* ====== CSS Variables — Studio HAN Brand ====== */
+:root {
+  --coffee-dark: #2A1F17;
+  --coffee-medium: #3E2F23;
+  --coffee-card: #4A3828;
+  --coffee-hover: #5A4535;
+  --latte: #C4A882;
+  --latte-light: #D4BE9A;
+  --cream: #F0E6D8;
+  --cream-dim: #B8A898;
+  --ocean-blue: #5B8FA8;
+  --ocean-blue-light: #7BB0C8;
+  --misty-green: #7A9E7E;
+  --tungsten: #F5C96B;
+  --sunset: #E8915A;
+  --danger: #D45B5B;
+  --danger-hover: #E06E6E;
+  --font-main: 'Segoe UI', 'Noto Sans TC', -apple-system, sans-serif;
+  --radius: 12px;
+  --radius-sm: 8px;
+  --shadow: 0 4px 20px rgba(0,0,0,0.3);
+  --transition: 0.25s ease;
+}
+/* ====== Reset & Base ====== */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: var(--font-main);
+  background: var(--coffee-dark);
+  color: var(--cream);
+  min-height: 100vh;
+  line-height: 1.6;
+}
+/* ====== Layout ====== */
+.app-container {
+  max-width: 880px;
+  margin: 0 auto;
+  padding: 32px 20px 60px;
+}
+/* ====== Header ====== */
+.header {
+  text-align: center;
+  margin-bottom: 36px;
+}
+.header h1 {
+  font-size: 2.2rem;
+  font-weight: 700;
+  color: var(--latte-light);
+  letter-spacing: 2px;
+}
+.header h1 span { color: var(--tungsten); }
+.header p {
+  color: var(--cream-dim);
+  font-size: 0.92rem;
+  margin-top: 6px;
+}
+/* ====== Upload Zone ====== */
+.upload-zone {
+  border: 2px dashed var(--latte);
+  border-radius: var(--radius);
+  padding: 48px 24px;
+  text-align: center;
+  cursor: pointer;
+  transition: all var(--transition);
+  background: rgba(78, 56, 40, 0.25);
+  position: relative;
+}
+.upload-zone:hover, .upload-zone.drag-over {
+  border-color: var(--tungsten);
+  background: rgba(245, 201, 107, 0.08);
+  transform: translateY(-2px);
+}
+.upload-zone .icon { font-size: 2.8rem; margin-bottom: 12px; }
+.upload-zone .label { font-size: 1.05rem; color: var(--latte-light); }
+.upload-zone .sub { font-size: 0.82rem; color: var(--cream-dim); margin-top: 6px; }
+.upload-zone input[type="file"] { display: none; }
+/* ====== Global Controls ====== */
+.global-controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  align-items: center;
+  margin-top: 28px;
+  padding: 18px 20px;
+  background: var(--coffee-medium);
+  border-radius: var(--radius);
+}
+.global-controls label {
+  font-size: 0.85rem;
+  color: var(--cream-dim);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.global-controls input[type="range"] {
+  width: 100px;
+  accent-color: var(--tungsten);
+}
+.global-controls select, .global-controls input[type="number"] {
+  background: var(--coffee-card);
+  border: 1px solid var(--coffee-hover);
+  color: var(--cream);
+  padding: 6px 10px;
+  border-radius: var(--radius-sm);
+  font-size: 0.85rem;
+}
+.global-controls .ctrl-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.ctrl-value {
+  color: var(--tungsten);
+  font-weight: 600;
+  min-width: 28px;
+  text-align: center;
+  font-size: 0.85rem;
+}
+.toggle-btn {
+  background: var(--coffee-card);
+  border: 1px solid var(--coffee-hover);
+  color: var(--cream-dim);
+  padding: 6px 14px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  font-size: 0.82rem;
+  transition: all var(--transition);
+}
+.toggle-btn:hover { border-color: var(--latte); color: var(--cream); }
+.toggle-btn.active {
+  background: var(--ocean-blue);
+  border-color: var(--ocean-blue);
+  color: #fff;
+}
+/* ====== Track List ====== */
+.track-list {
+  margin-top: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-height: 60px;
+}
+.track-list:empty::after {
+  content: '上傳音檔後會顯示在這裡';
+  display: block;
+  text-align: center;
+  color: var(--cream-dim);
+  padding: 40px;
+  font-size: 0.9rem;
+}
+/* ====== Track Card ====== */
+.track-card {
+  display: flex;
+  align-items: stretch;
+  background: var(--coffee-card);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  transition: all var(--transition);
+  border: 1px solid transparent;
+}
+.track-card:hover { border-color: var(--coffee-hover); }
+.track-card.sortable-chosen { border-color: var(--tungsten); box-shadow: var(--shadow); }
+.track-card.sortable-ghost { opacity: 0.4; }
+.drag-handle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  cursor: grab;
+  color: var(--cream-dim);
+  font-size: 1.1rem;
+  flex-shrink: 0;
+  background: rgba(0,0,0,0.1);
+  transition: color var(--transition);
+}
+.drag-handle:hover { color: var(--tungsten); }
+.drag-handle:active { cursor: grabbing; }
+.track-body { flex: 1; padding: 12px 14px; min-width: 0; }
+.track-top { display: flex; align-items: center; gap: 10px; }
+.track-index {
+  background: var(--coffee-hover);
+  color: var(--latte);
+  font-size: 0.72rem;
+  font-weight: 700;
+  width: 22px; height: 22px;
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+.track-name {
+  font-size: 0.9rem;
+  color: var(--cream);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  flex: 1;
+}
+.track-meta {
+  display: flex;
+  gap: 14px;
+  font-size: 0.75rem;
+  color: var(--cream-dim);
+  margin-top: 4px;
+  padding-left: 32px;
+}
+/* ====== Waveform ====== */
+.waveform-container {
+  margin: 8px 0 0 32px;
+  position: relative;
+  height: 48px;
+  background: rgba(0,0,0,0.15);
+  border-radius: 4px;
+  overflow: hidden;
+  cursor: pointer;
+}
+.waveform-container canvas {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+.trim-overlay {
+  position: absolute;
+  top: 0; bottom: 0;
+  background: rgba(0,0,0,0.5);
+  pointer-events: none;
+}
+.trim-overlay.left { left: 0; }
+.trim-overlay.right { right: 0; }
+.trim-handle {
+  position: absolute;
+  top: 0; bottom: 0;
+  width: 8px;
+  background: var(--tungsten);
+  cursor: ew-resize;
+  z-index: 2;
+  opacity: 0.9;
+  transition: opacity 0.15s;
+}
+.trim-handle:hover { opacity: 1; }
+.trim-handle::after {
+  content: '';
+  position: absolute;
+  top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  width: 2px; height: 16px;
+  background: var(--coffee-dark);
+  border-radius: 1px;
+}
+.playhead {
+  position: absolute;
+  top: 0; bottom: 0;
+  width: 2px;
+  background: var(--sunset);
+  z-index: 3;
+  pointer-events: none;
+  display: none;
+}
+/* ====== Trim Info ====== */
+.trim-info {
+  display: flex;
+  gap: 10px;
+  margin: 6px 0 0 32px;
+  font-size: 0.75rem;
+  color: var(--cream-dim);
+  align-items: center;
+}
+.trim-info input {
+  background: var(--coffee-medium);
+  border: 1px solid var(--coffee-hover);
+  color: var(--cream);
+  padding: 2px 6px;
+  border-radius: 4px;
+  width: 60px;
+  font-size: 0.75rem;
+  text-align: center;
+}
+.trim-info .trim-duration { color: var(--tungsten); font-weight: 600; }
+/* ====== Track Actions ====== */
+.track-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 8px 10px;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.btn-icon {
+  background: none;
+  border: none;
+  color: var(--cream-dim);
+  cursor: pointer;
+  font-size: 1rem;
+  padding: 6px;
+  border-radius: 6px;
+  transition: all var(--transition);
+  line-height: 1;
+}
+.btn-icon:hover { color: var(--cream); background: var(--coffee-hover); }
+.btn-icon.playing { color: var(--tungsten); }
+.btn-icon.delete:hover { color: var(--danger); }
+/* ====== Crossfade Indicator ====== */
+.crossfade-indicator {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 4px 0;
+  font-size: 0.72rem;
+  color: var(--ocean-blue-light);
+}
+.crossfade-indicator .cf-line {
+  width: 60px;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--ocean-blue), transparent);
+}
+/* ====== Action Bar ====== */
+.action-bar {
+  margin-top: 28px;
+  display: flex;
+  justify-content: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+.btn-merge {
+  background: linear-gradient(135deg, var(--tungsten), var(--sunset));
+  color: var(--coffee-dark);
+  border: none;
+  padding: 14px 40px;
+  border-radius: var(--radius);
+  font-size: 1.05rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all var(--transition);
+  letter-spacing: 1px;
+}
+.btn-merge:hover { transform: translateY(-2px); box-shadow: 0 6px 24px rgba(245,201,107,0.3); }
+.btn-merge:disabled { opacity: 0.4; cursor: not-allowed; transform: none; box-shadow: none; }
+/* ====== Progress ====== */
+.progress-section {
+  margin-top: 24px;
+  display: none;
+}
+.progress-section.visible { display: block; }
+.progress-bar-wrap {
+  background: var(--coffee-medium);
+  border-radius: 20px;
+  height: 12px;
+  overflow: hidden;
+}
+.progress-bar {
+  height: 100%;
+  background: linear-gradient(90deg, var(--tungsten), var(--sunset));
+  border-radius: 20px;
+  width: 0%;
+  transition: width 0.3s;
+}
+.progress-text {
+  text-align: center;
+  font-size: 0.82rem;
+  color: var(--cream-dim);
+  margin-top: 8px;
+}
+/* ====== Result ====== */
+.result-section {
+  margin-top: 28px;
+  padding: 24px;
+  background: var(--coffee-medium);
+  border-radius: var(--radius);
+  text-align: center;
+  display: none;
+  border: 1px solid var(--misty-green);
+}
+.result-section.visible { display: block; }
+.result-section h3 {
+  color: var(--misty-green);
+  margin-bottom: 16px;
+  font-size: 1.1rem;
+}
+.result-section audio {
+  width: 100%;
+  max-width: 600px;
+  margin: 0 auto 16px;
+  display: block;
+  border-radius: var(--radius-sm);
+}
+.btn-download {
+  background: var(--misty-green);
+  color: var(--coffee-dark);
+  border: none;
+  padding: 12px 32px;
+  border-radius: var(--radius-sm);
+  font-size: 0.95rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all var(--transition);
+}
+.btn-download:hover { transform: translateY(-1px); box-shadow: 0 4px 16px rgba(122,158,126,0.3); }
+.result-meta {
+  font-size: 0.8rem;
+  color: var(--cream-dim);
+  margin-top: 10px;
+}
+/* ====== Filename Section ====== */
+.filename-section {
+  margin-top: 20px;
+  padding: 16px 20px;
+  background: var(--coffee-medium);
+  border-radius: var(--radius);
+  display: none;
+}
+.filename-section.visible { display: block; }
+.filename-row {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+.filename-row label {
+  font-size: 0.85rem;
+  color: var(--cream-dim);
+  white-space: nowrap;
+}
+.filename-input {
+  flex: 1;
+  min-width: 200px;
+  background: var(--coffee-card);
+  border: 1px solid var(--coffee-hover);
+  color: var(--cream);
+  padding: 8px 12px;
+  border-radius: var(--radius-sm);
+  font-size: 0.9rem;
+  font-family: var(--font-main);
+}
+.filename-input:focus { outline: none; border-color: var(--tungsten); }
+.filename-input::placeholder { color: var(--cream-dim); opacity: 0.6; }
+.template-select {
+  background: var(--coffee-card);
+  border: 1px solid var(--coffee-hover);
+  color: var(--latte);
+  padding: 8px 10px;
+  border-radius: var(--radius-sm);
+  font-size: 0.82rem;
+  cursor: pointer;
+}
+.filename-preview {
+  font-size: 0.75rem;
+  color: var(--cream-dim);
+  margin-top: 6px;
+  word-break: break-all;
+}
+.filename-preview span { color: var(--tungsten); }
+/* ====== Gap Indicator ====== */
+.gap-indicator {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 4px 0;
+  font-size: 0.72rem;
+  color: var(--cream-dim);
+}
+.gap-indicator .gap-line {
+  width: 40px;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--cream-dim), transparent);
+}
+/* ====== Footer ====== */
+.footer {
+  text-align: center;
+  margin-top: 48px;
+  padding-top: 20px;
+  border-top: 1px solid var(--coffee-card);
+  font-size: 0.78rem;
+  color: var(--cream-dim);
+}
+/* ====== Scrollbar ====== */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: var(--coffee-dark); }
+::-webkit-scrollbar-thumb { background: var(--coffee-hover); border-radius: 3px; }
+/* ====== Responsive ====== */
+@media (max-width: 600px) {
+  .header h1 { font-size: 1.6rem; }
+  .upload-zone { padding: 32px 16px; }
+  .global-controls { flex-direction: column; align-items: stretch; }
+  .track-meta { flex-wrap: wrap; gap: 8px; }
+}
+</style>
+</head>
+<body>
+
+<div class="app-container">
+
+  <!-- Header -->
+  <header class="header">
+    <h1>Wav<span>Link</span></h1>
+    <p>音檔串接工具 — Brewing sounds, serving peace.</p>
+  </header>
+
+  <!-- Upload Zone -->
+  <div class="upload-zone" id="uploadZone">
+    <div class="icon">🎵</div>
+    <div class="label">拖曳 WAV / MP3 檔案到這裡，或點擊上傳</div>
+    <div class="sub">支援多檔上傳，可放 12 個以上音檔</div>
+    <input type="file" id="fileInput" accept=".wav,.mp3,audio/wav,audio/mpeg" multiple>
+  </div>
+
+  <!-- Global Controls -->
+  <div class="global-controls" id="globalControls" style="display:none;">
+    <div class="ctrl-group">
+      <label>匯出格式</label>
+      <select id="formatSelect">
+        <option value="wav">WAV（無損）</option>
+        <option value="mp3">MP3（壓縮）</option>
+      </select>
+    </div>
+    <div class="ctrl-group">
+      <label>Crossfade</label>
+      <input type="range" id="crossfadeRange" min="0" max="5" step="0.1" value="0">
+      <span class="ctrl-value" id="crossfadeValue">0s</span>
+    </div>
+    <div class="ctrl-group">
+      <button class="toggle-btn" id="normalizeBtn">音量正規化</button>
+    </div>
+    <div class="ctrl-group">
+      <label>MP3 品質</label>
+      <select id="mp3Quality">
+        <option value="320">320 kbps</option>
+        <option value="256">256 kbps</option>
+        <option value="192" selected>192 kbps</option>
+        <option value="128">128 kbps</option>
+      </select>
+    </div>
+    <div class="ctrl-group">
+      <label>Fade In</label>
+      <input type="range" id="fadeInRange" min="0" max="10" step="0.5" value="0">
+      <span class="ctrl-value" id="fadeInValue">0s</span>
+    </div>
+    <div class="ctrl-group">
+      <label>Fade Out</label>
+      <input type="range" id="fadeOutRange" min="0" max="10" step="0.5" value="0">
+      <span class="ctrl-value" id="fadeOutValue">0s</span>
+    </div>
+    <div class="ctrl-group">
+      <label>靜音間隔</label>
+      <input type="range" id="gapRange" min="0" max="5" step="0.1" value="0">
+      <span class="ctrl-value" id="gapValue">0s</span>
+    </div>
+  </div>
+
+  <!-- Filename Section -->
+  <div class="filename-section" id="filenameSection">
+    <div class="filename-row">
+      <label>檔名</label>
+      <input type="text" class="filename-input" id="filenameInput" placeholder="輸入匯出檔名...">
+      <select class="template-select" id="templateSelect">
+        <option value="">套用模板...</option>
+        <option value="hanwav_{album}_{date}">hanwav_專輯名_日期</option>
+        <option value="hanwav_{album}_track{n}">hanwav_專輯名_track序號</option>
+        <option value="StudioHAN_{album}_{date}">StudioHAN_專輯名_日期</option>
+        <option value="merged_{date}_{time}">merged_日期_時間</option>
+      </select>
+    </div>
+    <div class="filename-preview" id="filenamePreview"></div>
+  </div>
+
+  <!-- Track List -->
+  <div class="track-list" id="trackList"></div>
+
+  <!-- Action Bar -->
+  <div class="action-bar" id="actionBar" style="display:none;">
+    <button class="btn-merge" id="mergeBtn" disabled>開始合併</button>
+  </div>
+
+  <!-- Progress -->
+  <div class="progress-section" id="progressSection">
+    <div class="progress-bar-wrap">
+      <div class="progress-bar" id="progressBar"></div>
+    </div>
+    <div class="progress-text" id="progressText">準備中...</div>
+  </div>
+
+  <!-- Result -->
+  <div class="result-section" id="resultSection">
+    <h3>✅ 合併完成</h3>
+    <audio id="resultAudio" controls></audio>
+    <button class="btn-download" id="downloadBtn">下載檔案</button>
+    <div class="result-meta" id="resultMeta"></div>
+  </div>
+
+  <!-- Footer -->
+  <div class="footer">
+    WavLink by Studio HAN — 全程瀏覽器端處理，你的音檔不會上傳至任何伺服器
+  </div>
+</div>
+
+<script>
+// ============================================================
+// WavLink — Audio Concatenation Tool
+// Studio HAN / han.wav
+// ============================================================
+
+(() => {
+'use strict';
+
+// ---- State ----
+const state = {
+  tracks: [],       // { id, file, name, size, buffer, duration, trimStart, trimEnd }
+  audioCtx: null,
+  normalize: false,
+  currentlyPlaying: null, // { id, source, animFrame }
+};
+
+let trackIdCounter = 0;
+
+// ---- DOM refs ----
+const $ = id => document.getElementById(id);
+const uploadZone    = $('uploadZone');
+const fileInput     = $('fileInput');
+const trackList     = $('trackList');
+const globalControls= $('globalControls');
+const actionBar     = $('actionBar');
+const mergeBtn      = $('mergeBtn');
+const formatSelect  = $('formatSelect');
+const crossfadeRange= $('crossfadeRange');
+const crossfadeValue= $('crossfadeValue');
+const normalizeBtn  = $('normalizeBtn');
+const mp3Quality    = $('mp3Quality');
+const fadeInRange   = $('fadeInRange');
+const fadeInValue   = $('fadeInValue');
+const fadeOutRange  = $('fadeOutRange');
+const fadeOutValue  = $('fadeOutValue');
+const gapRange      = $('gapRange');
+const gapValue      = $('gapValue');
+const filenameSection=$('filenameSection');
+const filenameInput = $('filenameInput');
+const templateSelect= $('templateSelect');
+const filenamePreview=$('filenamePreview');
+const progressSection=$('progressSection');
+const progressBar   = $('progressBar');
+const progressText  = $('progressText');
+const resultSection = $('resultSection');
+const resultAudio   = $('resultAudio');
+const downloadBtn   = $('downloadBtn');
+const resultMeta    = $('resultMeta');
+
+// ---- Audio Context ----
+function getAudioCtx() {
+  if (!state.audioCtx) state.audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  return state.audioCtx;
+}
+
+// ---- Helpers ----
+function formatTime(sec) {
+  if (!isFinite(sec)) return '0:00';
+  const m = Math.floor(sec / 60);
+  const s = Math.floor(sec % 60);
+  const ms = Math.floor((sec % 1) * 10);
+  return `${m}:${s.toString().padStart(2,'0')}.${ms}`;
+}
+
+function formatSize(bytes) {
+  if (bytes < 1024) return bytes + ' B';
+  if (bytes < 1048576) return (bytes / 1024).toFixed(1) + ' KB';
+  return (bytes / 1048576).toFixed(1) + ' MB';
+}
+
+// ---- Upload Handling ----
+uploadZone.addEventListener('click', () => fileInput.click());
+fileInput.addEventListener('change', e => handleFiles(e.target.files));
+
+uploadZone.addEventListener('dragover', e => {
+  e.preventDefault();
+  uploadZone.classList.add('drag-over');
+});
+uploadZone.addEventListener('dragleave', () => uploadZone.classList.remove('drag-over'));
+uploadZone.addEventListener('drop', e => {
+  e.preventDefault();
+  uploadZone.classList.remove('drag-over');
+  handleFiles(e.dataTransfer.files);
+});
+
+async function handleFiles(fileList) {
+  const ctx = getAudioCtx();
+  const validFiles = [...fileList].filter(f =>
+    f.type === 'audio/wav' || f.type === 'audio/mpeg' || f.type === 'audio/mp3' ||
+    f.name.toLowerCase().endsWith('.wav') || f.name.toLowerCase().endsWith('.mp3')
+  );
+  if (!validFiles.length) return;
+
+  for (const file of validFiles) {
+    try {
+      const arrayBuf = await file.arrayBuffer();
+      const audioBuffer = await ctx.decodeAudioData(arrayBuf.slice(0)); // slice to avoid detach
+      const track = {
+        id: ++trackIdCounter,
+        file,
+        name: file.name,
+        size: file.size,
+        buffer: audioBuffer,
+        duration: audioBuffer.duration,
+        trimStart: 0,
+        trimEnd: audioBuffer.duration,
+      };
+      state.tracks.push(track);
+    } catch (err) {
+      console.error('Failed to decode:', file.name, err);
+    }
+  }
+
+  fileInput.value = '';
+  updateUI();
+}
+
+// ---- UI Update ----
+function updateUI() {
+  const hasTracks = state.tracks.length > 0;
+  globalControls.style.display = hasTracks ? 'flex' : 'none';
+  filenameSection.classList.toggle('visible', hasTracks);
+  actionBar.style.display = hasTracks ? 'flex' : 'none';
+  mergeBtn.disabled = state.tracks.length < 1;
+
+  renderTrackList();
+}
+
+function renderTrackList() {
+  trackList.innerHTML = '';
+  const cf = parseFloat(crossfadeRange.value);
+
+  state.tracks.forEach((track, idx) => {
+    // Track card
+    const card = document.createElement('div');
+    card.className = 'track-card';
+    card.dataset.id = track.id;
+
+    const trimDuration = track.trimEnd - track.trimStart;
+
+    card.innerHTML = `
+      <div class="drag-handle" title="拖曳排序">⠿</div>
+      <div class="track-body">
+        <div class="track-top">
+          <div class="track-index">${idx + 1}</div>
+          <div class="track-name" title="${track.name}">${track.name}</div>
+        </div>
+        <div class="track-meta">
+          <span>${formatSize(track.size)}</span>
+          <span>原始 ${formatTime(track.duration)}</span>
+          <span>使用 ${formatTime(trimDuration)}</span>
+          <span>${track.buffer.numberOfChannels}ch / ${track.buffer.sampleRate}Hz</span>
+        </div>
+        <div class="waveform-container" data-track-id="${track.id}">
+          <canvas></canvas>
+          <div class="trim-overlay left" style="width:${(track.trimStart / track.duration * 100)}%"></div>
+          <div class="trim-overlay right" style="width:${((track.duration - track.trimEnd) / track.duration * 100)}%"></div>
+          <div class="trim-handle" data-side="start" style="left:${(track.trimStart / track.duration * 100)}%"></div>
+          <div class="trim-handle" data-side="end" style="left:${(track.trimEnd / track.duration * 100)}%"></div>
+          <div class="playhead"></div>
+        </div>
+        <div class="trim-info">
+          <span>起點</span>
+          <input type="text" class="trim-input" data-side="start" data-track-id="${track.id}" value="${formatTime(track.trimStart)}">
+          <span>終點</span>
+          <input type="text" class="trim-input" data-side="end" data-track-id="${track.id}" value="${formatTime(track.trimEnd)}">
+          <span class="trim-duration">片段 ${formatTime(trimDuration)}</span>
+        </div>
+      </div>
+      <div class="track-actions">
+        <button class="btn-icon play-btn" data-id="${track.id}" title="試聽">▶</button>
+        <button class="btn-icon delete" data-id="${track.id}" title="移除">✕</button>
+      </div>
+    `;
+    trackList.appendChild(card);
+
+    // Draw waveform
+    const canvas = card.querySelector('canvas');
+    drawWaveform(canvas, track.buffer);
+
+    // Crossfade / Gap indicator between tracks
+    if (idx < state.tracks.length - 1) {
+      const gap = parseFloat(gapRange.value);
+      const parts = [];
+      if (cf > 0) parts.push(`crossfade ${cf}s`);
+      if (gap > 0) parts.push(`gap ${gap}s`);
+      if (parts.length > 0) {
+        const indicator = document.createElement('div');
+        indicator.className = cf > 0 ? 'crossfade-indicator' : 'gap-indicator';
+        const lineClass = cf > 0 ? 'cf-line' : 'gap-line';
+        indicator.innerHTML = `<span class="${lineClass}"></span> ${parts.join(' + ')} <span class="${lineClass}"></span>`;
+        trackList.appendChild(indicator);
+      }
+    }
+  });
+
+  // Re-init SortableJS
+  initSortable();
+  bindTrackEvents();
+}
+
+// ---- Waveform Drawing ----
+function drawWaveform(canvas, audioBuffer) {
+  const dpr = window.devicePixelRatio || 1;
+  const rect = canvas.parentElement.getBoundingClientRect();
+  canvas.width = rect.width * dpr;
+  canvas.height = rect.height * dpr;
+
+  const ctx = canvas.getContext('2d');
+  ctx.scale(dpr, dpr);
+
+  const w = rect.width;
+  const h = rect.height;
+  const data = audioBuffer.getChannelData(0);
+  const step = Math.ceil(data.length / w);
+  const mid = h / 2;
+
+  // Gradient
+  const grad = ctx.createLinearGradient(0, 0, 0, h);
+  grad.addColorStop(0, '#F5C96B');
+  grad.addColorStop(0.5, '#E8915A');
+  grad.addColorStop(1, '#F5C96B');
+
+  ctx.fillStyle = grad;
+
+  for (let i = 0; i < w; i++) {
+    let min = 1, max = -1;
+    const start = Math.floor(i * step);
+    for (let j = 0; j < step && start + j < data.length; j++) {
+      const val = data[start + j];
+      if (val < min) min = val;
+      if (val > max) max = val;
+    }
+    const top = (1 - max) * mid;
+    const bottom = (1 - min) * mid;
+    ctx.fillRect(i, top, 1, Math.max(1, bottom - top));
+  }
+}
+
+// ---- Trim Handle Drag ----
+function bindTrackEvents() {
+  // Play buttons
+  trackList.querySelectorAll('.play-btn').forEach(btn => {
+    btn.addEventListener('click', () => togglePlay(parseInt(btn.dataset.id)));
+  });
+
+  // Delete buttons
+  trackList.querySelectorAll('.btn-icon.delete').forEach(btn => {
+    btn.addEventListener('click', () => {
+      stopPlaying();
+      state.tracks = state.tracks.filter(t => t.id !== parseInt(btn.dataset.id));
+      updateUI();
+    });
+  });
+
+  // Trim handles
+  trackList.querySelectorAll('.trim-handle').forEach(handle => {
+    handle.addEventListener('mousedown', startTrimDrag);
+    handle.addEventListener('touchstart', startTrimDrag, { passive: false });
+  });
+
+  // Trim inputs
+  trackList.querySelectorAll('.trim-input').forEach(input => {
+    input.addEventListener('change', e => {
+      const trackId = parseInt(e.target.dataset.trackId);
+      const side = e.target.dataset.side;
+      const track = state.tracks.find(t => t.id === trackId);
+      if (!track) return;
+      const val = parseTimeInput(e.target.value);
+      if (val === null || val < 0 || val > track.duration) return;
+      if (side === 'start') {
+        track.trimStart = Math.min(val, track.trimEnd - 0.05);
+      } else {
+        track.trimEnd = Math.max(val, track.trimStart + 0.05);
+      }
+      renderTrackList();
+    });
+  });
+
+  // Click waveform to seek & play
+  trackList.querySelectorAll('.waveform-container').forEach(container => {
+    container.addEventListener('click', e => {
+      if (e.target.classList.contains('trim-handle')) return;
+      const trackId = parseInt(container.dataset.trackId);
+      const rect = container.getBoundingClientRect();
+      const ratio = (e.clientX - rect.left) / rect.width;
+      const track = state.tracks.find(t => t.id === trackId);
+      if (!track) return;
+      const offset = ratio * track.duration;
+      playTrackFrom(trackId, Math.max(track.trimStart, Math.min(offset, track.trimEnd)));
+    });
+  });
+}
+
+function parseTimeInput(str) {
+  // Accept m:ss.s or just seconds
+  const match = str.match(/^(\d+):(\d+)(?:\.(\d))?$/);
+  if (match) {
+    return parseInt(match[1]) * 60 + parseInt(match[2]) + (match[3] ? parseInt(match[3]) / 10 : 0);
+  }
+  const num = parseFloat(str);
+  return isNaN(num) ? null : num;
+}
+
+function startTrimDrag(e) {
+  e.preventDefault();
+  const handle = e.currentTarget;
+  const side = handle.dataset.side;
+  const container = handle.closest('.waveform-container');
+  const trackId = parseInt(container.dataset.trackId);
+  const track = state.tracks.find(t => t.id === trackId);
+  if (!track) return;
+
+  const rect = container.getBoundingClientRect();
+  const isTouch = e.type === 'touchstart';
+
+  function onMove(ev) {
+    const clientX = isTouch ? ev.touches[0].clientX : ev.clientX;
+    const ratio = Math.max(0, Math.min(1, (clientX - rect.left) / rect.width));
+    const time = ratio * track.duration;
+
+    if (side === 'start') {
+      track.trimStart = Math.min(time, track.trimEnd - 0.05);
+    } else {
+      track.trimEnd = Math.max(time, track.trimStart + 0.05);
+    }
+
+    // Update visuals without full re-render
+    const leftOverlay = container.querySelector('.trim-overlay.left');
+    const rightOverlay = container.querySelector('.trim-overlay.right');
+    const startHandle = container.querySelector('[data-side="start"]');
+    const endHandle = container.querySelector('[data-side="end"]');
+
+    leftOverlay.style.width = (track.trimStart / track.duration * 100) + '%';
+    rightOverlay.style.width = ((track.duration - track.trimEnd) / track.duration * 100) + '%';
+    startHandle.style.left = (track.trimStart / track.duration * 100) + '%';
+    endHandle.style.left = (track.trimEnd / track.duration * 100) + '%';
+
+    // Update trim info inputs
+    const card = container.closest('.track-card');
+    const inputs = card.querySelectorAll('.trim-input');
+    inputs[0].value = formatTime(track.trimStart);
+    inputs[1].value = formatTime(track.trimEnd);
+    card.querySelector('.trim-duration').textContent = `片段 ${formatTime(track.trimEnd - track.trimStart)}`;
+
+    // Update track meta
+    const meta = card.querySelectorAll('.track-meta span');
+    meta[2].textContent = `使用 ${formatTime(track.trimEnd - track.trimStart)}`;
+  }
+
+  function onUp() {
+    document.removeEventListener(isTouch ? 'touchmove' : 'mousemove', onMove);
+    document.removeEventListener(isTouch ? 'touchend' : 'mouseup', onUp);
+  }
+
+  document.addEventListener(isTouch ? 'touchmove' : 'mousemove', onMove);
+  document.addEventListener(isTouch ? 'touchend' : 'mouseup', onUp);
+}
+
+// ---- SortableJS ----
+let sortableInstance = null;
+
+function initSortable() {
+  if (sortableInstance) sortableInstance.destroy();
+  sortableInstance = new Sortable(trackList, {
+    handle: '.drag-handle',
+    animation: 200,
+    ghostClass: 'sortable-ghost',
+    chosenClass: 'sortable-chosen',
+    filter: '.crossfade-indicator',
+    onEnd: (evt) => {
+      // Recalculate order from DOM (skip crossfade indicators)
+      const cards = [...trackList.querySelectorAll('.track-card')];
+      const newOrder = cards.map(card => parseInt(card.dataset.id));
+      const reordered = [];
+      for (const id of newOrder) {
+        const track = state.tracks.find(t => t.id === id);
+        if (track) reordered.push(track);
+      }
+      state.tracks = reordered;
+      renderTrackList();
+    }
+  });
+}
+
+// ---- Playback ----
+function stopPlaying() {
+  if (state.currentlyPlaying) {
+    try { state.currentlyPlaying.source.stop(); } catch(e) {}
+    cancelAnimationFrame(state.currentlyPlaying.animFrame);
+    // Reset play button
+    const btn = trackList.querySelector(`.play-btn[data-id="${state.currentlyPlaying.id}"]`);
+    if (btn) { btn.textContent = '▶'; btn.classList.remove('playing'); }
+    // Hide playhead
+    const container = trackList.querySelector(`.waveform-container[data-track-id="${state.currentlyPlaying.id}"]`);
+    if (container) container.querySelector('.playhead').style.display = 'none';
+    state.currentlyPlaying = null;
+  }
+}
+
+function togglePlay(trackId) {
+  if (state.currentlyPlaying && state.currentlyPlaying.id === trackId) {
+    stopPlaying();
+    return;
+  }
+  const track = state.tracks.find(t => t.id === trackId);
+  if (!track) return;
+  playTrackFrom(trackId, track.trimStart);
+}
+
+function playTrackFrom(trackId, startOffset) {
+  stopPlaying();
+  const track = state.tracks.find(t => t.id === trackId);
+  if (!track) return;
+
+  const ctx = getAudioCtx();
+  if (ctx.state === 'suspended') ctx.resume();
+
+  const source = ctx.createBufferSource();
+  source.buffer = track.buffer;
+  source.connect(ctx.destination);
+
+  const duration = track.trimEnd - startOffset;
+  source.start(0, startOffset, duration);
+
+  const btn = trackList.querySelector(`.play-btn[data-id="${trackId}"]`);
+  if (btn) { btn.textContent = '⏸'; btn.classList.add('playing'); }
+
+  const container = trackList.querySelector(`.waveform-container[data-track-id="${trackId}"]`);
+  const playhead = container ? container.querySelector('.playhead') : null;
+  if (playhead) playhead.style.display = 'block';
+
+  const startTime = ctx.currentTime;
+
+  function animate() {
+    const elapsed = ctx.currentTime - startTime;
+    const current = startOffset + elapsed;
+    if (playhead && container) {
+      const pct = (current / track.duration) * 100;
+      playhead.style.left = pct + '%';
+    }
+    if (elapsed < duration) {
+      state.currentlyPlaying.animFrame = requestAnimationFrame(animate);
+    } else {
+      stopPlaying();
+    }
+  }
+
+  state.currentlyPlaying = { id: trackId, source, animFrame: requestAnimationFrame(animate) };
+
+  source.onended = () => {
+    if (state.currentlyPlaying && state.currentlyPlaying.id === trackId) {
+      stopPlaying();
+    }
+  };
+}
+
+// ---- Crossfade control ----
+crossfadeRange.addEventListener('input', () => {
+  crossfadeValue.textContent = crossfadeRange.value + 's';
+  renderTrackList();
+});
+
+// ---- Normalize toggle ----
+normalizeBtn.addEventListener('click', () => {
+  state.normalize = !state.normalize;
+  normalizeBtn.classList.toggle('active', state.normalize);
+});
+
+// ---- Fade In/Out controls ----
+fadeInRange.addEventListener('input', () => {
+  fadeInValue.textContent = fadeInRange.value + 's';
+});
+fadeOutRange.addEventListener('input', () => {
+  fadeOutValue.textContent = fadeOutRange.value + 's';
+});
+
+// ---- Gap control ----
+gapRange.addEventListener('input', () => {
+  gapValue.textContent = gapRange.value + 's';
+  renderTrackList();
+});
+
+// ---- Filename template ----
+function getDateStr() {
+  const d = new Date();
+  return `${d.getFullYear()}${(d.getMonth()+1).toString().padStart(2,'0')}${d.getDate().toString().padStart(2,'0')}`;
+}
+function getTimeStr() {
+  const d = new Date();
+  return `${d.getHours().toString().padStart(2,'0')}${d.getMinutes().toString().padStart(2,'0')}`;
+}
+function applyTemplate(tmpl) {
+  const date = getDateStr();
+  const time = getTimeStr();
+  return tmpl
+    .replace('{date}', date)
+    .replace('{time}', time)
+    .replace('{album}', 'album')
+    .replace('{n}', state.tracks.length.toString().padStart(2,'0'));
+}
+function updateFilenamePreview() {
+  const name = filenameInput.value.trim();
+  const ext = formatSelect.value;
+  if (name) {
+    filenamePreview.innerHTML = `匯出為：<span>${name}.${ext}</span>`;
+  } else {
+    filenamePreview.innerHTML = `匯出為：<span>WavLink_merged_${getDateStr()}.${ext}</span>`;
+  }
+}
+templateSelect.addEventListener('change', () => {
+  if (templateSelect.value) {
+    filenameInput.value = applyTemplate(templateSelect.value);
+    updateFilenamePreview();
+  }
+  templateSelect.value = '';
+});
+filenameInput.addEventListener('input', updateFilenamePreview);
+formatSelect.addEventListener('change', updateFilenamePreview);
+
+// ---- MERGE ENGINE ----
+mergeBtn.addEventListener('click', startMerge);
+
+async function startMerge() {
+  if (state.tracks.length === 0) return;
+  stopPlaying();
+
+  mergeBtn.disabled = true;
+  progressSection.classList.add('visible');
+  resultSection.classList.remove('visible');
+
+  try {
+    setProgress(0, '正在解碼音檔...');
+
+    const ctx = getAudioCtx();
+    const crossfade = parseFloat(crossfadeRange.value);
+    const fadeIn = parseFloat(fadeInRange.value);
+    const fadeOut = parseFloat(fadeOutRange.value);
+    const gapDuration = parseFloat(gapRange.value);
+    const sampleRate = 44100;
+    const channels = 2; // Always output stereo
+
+    // 1. Prepare trimmed buffers
+    setProgress(10, '裁剪音檔片段...');
+    const trimmedBuffers = [];
+    for (const track of state.tracks) {
+      const startSample = Math.floor(track.trimStart * track.buffer.sampleRate);
+      const endSample = Math.floor(track.trimEnd * track.buffer.sampleRate);
+      const length = endSample - startSample;
+
+      // Resample to target sampleRate if needed
+      let buf = track.buffer;
+      if (buf.sampleRate !== sampleRate) {
+        buf = await resampleBuffer(buf, sampleRate);
+        const rStart = Math.floor(track.trimStart * sampleRate);
+        const rEnd = Math.floor(track.trimEnd * sampleRate);
+        const rLen = rEnd - rStart;
+        const trimmed = new OfflineAudioContext(channels, rLen, sampleRate);
+        const src = trimmed.createBufferSource();
+        src.buffer = buf;
+        src.connect(trimmed.destination);
+        src.start(0, track.trimStart, track.trimEnd - track.trimStart);
+        const rendered = await trimmed.startRendering();
+        trimmedBuffers.push(rendered);
+      } else {
+        // Extract trimmed segment
+        const offline = new OfflineAudioContext(channels, length, sampleRate);
+        const src = offline.createBufferSource();
+        src.buffer = buf;
+        src.connect(offline.destination);
+        src.start(0, track.trimStart, track.trimEnd - track.trimStart);
+        const rendered = await offline.startRendering();
+        trimmedBuffers.push(rendered);
+      }
+    }
+
+    // 2. Normalize if needed
+    if (state.normalize) {
+      setProgress(30, '正規化音量...');
+      for (let i = 0; i < trimmedBuffers.length; i++) {
+        normalizeBuffer(trimmedBuffers[i]);
+      }
+    }
+
+    // 3. Calculate total length with crossfade and gap
+    setProgress(40, '計算合併長度...');
+    const gapSamples = Math.floor(gapDuration * sampleRate);
+    let totalSamples = 0;
+    for (let i = 0; i < trimmedBuffers.length; i++) {
+      totalSamples += trimmedBuffers[i].length;
+      if (i > 0) {
+        if (crossfade > 0) totalSamples -= Math.floor(crossfade * sampleRate);
+        if (gapSamples > 0) totalSamples += gapSamples;
+      }
+    }
+    totalSamples = Math.max(totalSamples, 0);
+
+    // 4. Mix into final buffer
+    setProgress(50, '合併音檔中...');
+    const finalBuffer = new Float32Array(totalSamples * channels);
+
+    let writePos = 0;
+    for (let i = 0; i < trimmedBuffers.length; i++) {
+      const buf = trimmedBuffers[i];
+      const cfSamples = (i > 0 && crossfade > 0) ? Math.min(Math.floor(crossfade * sampleRate), buf.length) : 0;
+
+      // Apply gap before this track (after crossfade offset)
+      if (i > 0) {
+        if (cfSamples > 0) writePos -= cfSamples;
+        if (gapSamples > 0) writePos += gapSamples;
+      }
+
+      for (let ch = 0; ch < channels; ch++) {
+        const chData = ch < buf.numberOfChannels ? buf.getChannelData(ch) : buf.getChannelData(0);
+        for (let s = 0; s < buf.length; s++) {
+          const outIdx = (writePos + s) * channels + ch;
+          if (outIdx < 0 || outIdx >= finalBuffer.length) continue;
+
+          let sample = chData[s];
+
+          // Apply crossfade between tracks
+          if (cfSamples > 0 && s < cfSamples) {
+            const cfFadeIn = s / cfSamples;
+            sample *= cfFadeIn;
+          }
+          if (i < trimmedBuffers.length - 1 && crossfade > 0) {
+            const cfEnd = Math.min(Math.floor(crossfade * sampleRate), buf.length);
+            const fadeStart = buf.length - cfEnd;
+            if (s >= fadeStart) {
+              const cfFadeOut = 1 - (s - fadeStart) / cfEnd;
+              sample *= cfFadeOut;
+            }
+          }
+
+          // Apply global Fade In (first track only)
+          if (i === 0 && fadeIn > 0) {
+            const fadeInSamples = Math.floor(fadeIn * sampleRate);
+            if (s < fadeInSamples) {
+              sample *= s / fadeInSamples;
+            }
+          }
+
+          // Apply global Fade Out (last track only)
+          if (i === trimmedBuffers.length - 1 && fadeOut > 0) {
+            const fadeOutSamples = Math.floor(fadeOut * sampleRate);
+            const fadeOutStart = buf.length - fadeOutSamples;
+            if (s >= fadeOutStart && s < buf.length) {
+              sample *= 1 - (s - fadeOutStart) / fadeOutSamples;
+            }
+          }
+
+          finalBuffer[outIdx] += sample;
+        }
+      }
+      writePos += buf.length;
+
+      setProgress(50 + (i / trimmedBuffers.length) * 30, `合併第 ${i+1}/${trimmedBuffers.length} 軌...`);
+    }
+
+    // Clip protection
+    for (let i = 0; i < finalBuffer.length; i++) {
+      finalBuffer[i] = Math.max(-1, Math.min(1, finalBuffer[i]));
+    }
+
+    // 5. Encode
+    const format = formatSelect.value;
+    let blob, ext;
+
+    if (format === 'mp3') {
+      setProgress(85, '編碼 MP3...');
+      blob = encodeMP3(finalBuffer, channels, sampleRate, parseInt(mp3Quality.value));
+      ext = 'mp3';
+    } else {
+      setProgress(85, '編碼 WAV...');
+      blob = encodeWAV(finalBuffer, channels, sampleRate);
+      ext = 'wav';
+    }
+
+    setProgress(100, '完成！');
+
+    // Show result
+    const url = URL.createObjectURL(blob);
+    resultAudio.src = url;
+    const customName = filenameInput.value.trim();
+    const finalName = customName ? `${customName}.${ext}` : `WavLink_merged_${getDateStr()}.${ext}`;
+    downloadBtn.onclick = () => {
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = finalName;
+      a.click();
+    };
+    resultMeta.textContent = `${finalName} — ${ext.toUpperCase()} / ${formatSize(blob.size)} / ${formatTime(totalSamples / sampleRate)} / ${sampleRate}Hz ${channels}ch`;
+    resultSection.classList.add('visible');
+
+  } catch (err) {
+    console.error('Merge failed:', err);
+    setProgress(0, `合併失敗：${err.message}`);
+  } finally {
+    mergeBtn.disabled = false;
+  }
+}
+
+function setProgress(pct, text) {
+  progressBar.style.width = pct + '%';
+  progressText.textContent = text;
+}
+
+// ---- Normalize ----
+function normalizeBuffer(audioBuffer) {
+  let peak = 0;
+  for (let ch = 0; ch < audioBuffer.numberOfChannels; ch++) {
+    const data = audioBuffer.getChannelData(ch);
+    for (let i = 0; i < data.length; i++) {
+      const abs = Math.abs(data[i]);
+      if (abs > peak) peak = abs;
+    }
+  }
+  if (peak > 0 && peak !== 1) {
+    const gain = 0.95 / peak;
+    for (let ch = 0; ch < audioBuffer.numberOfChannels; ch++) {
+      const data = audioBuffer.getChannelData(ch);
+      for (let i = 0; i < data.length; i++) {
+        data[i] *= gain;
+      }
+    }
+  }
+}
+
+// ---- Resample ----
+async function resampleBuffer(buffer, targetRate) {
+  const duration = buffer.duration;
+  const newLength = Math.ceil(duration * targetRate);
+  const offline = new OfflineAudioContext(buffer.numberOfChannels, newLength, targetRate);
+  const src = offline.createBufferSource();
+  src.buffer = buffer;
+  src.connect(offline.destination);
+  src.start(0);
+  return await offline.startRendering();
+}
+
+// ---- WAV Encoder ----
+function encodeWAV(interleaved, channels, sampleRate) {
+  // interleaved is already channel-interleaved Float32Array
+  const numSamples = interleaved.length / channels;
+  const bitsPerSample = 16;
+  const bytesPerSample = bitsPerSample / 8;
+  const blockAlign = channels * bytesPerSample;
+  const dataSize = numSamples * blockAlign;
+  const buffer = new ArrayBuffer(44 + dataSize);
+  const view = new DataView(buffer);
+
+  // RIFF header
+  writeString(view, 0, 'RIFF');
+  view.setUint32(4, 36 + dataSize, true);
+  writeString(view, 8, 'WAVE');
+  writeString(view, 12, 'fmt ');
+  view.setUint32(16, 16, true);
+  view.setUint16(20, 1, true); // PCM
+  view.setUint16(22, channels, true);
+  view.setUint32(24, sampleRate, true);
+  view.setUint32(28, sampleRate * blockAlign, true);
+  view.setUint16(32, blockAlign, true);
+  view.setUint16(34, bitsPerSample, true);
+  writeString(view, 36, 'data');
+  view.setUint32(40, dataSize, true);
+
+  // PCM data
+  let offset = 44;
+  for (let i = 0; i < interleaved.length; i++) {
+    const s = Math.max(-1, Math.min(1, interleaved[i]));
+    view.setInt16(offset, s < 0 ? s * 0x8000 : s * 0x7FFF, true);
+    offset += 2;
+  }
+
+  return new Blob([buffer], { type: 'audio/wav' });
+}
+
+function writeString(view, offset, string) {
+  for (let i = 0; i < string.length; i++) {
+    view.setUint8(offset + i, string.charCodeAt(i));
+  }
+}
+
+// ---- MP3 Encoder ----
+function encodeMP3(interleaved, channels, sampleRate, kbps) {
+  const numSamples = Math.floor(interleaved.length / channels);
+
+  // Separate into L/R channels (16-bit PCM)
+  const left = new Int16Array(numSamples);
+  const right = channels > 1 ? new Int16Array(numSamples) : null;
+
+  for (let i = 0; i < numSamples; i++) {
+    const lVal = interleaved[i * channels];
+    left[i] = lVal < 0 ? lVal * 0x8000 : lVal * 0x7FFF;
+    if (right) {
+      const rVal = interleaved[i * channels + 1];
+      right[i] = rVal < 0 ? rVal * 0x8000 : rVal * 0x7FFF;
+    }
+  }
+
+  const mp3encoder = new lamejs.Mp3Encoder(channels, sampleRate, kbps);
+  const mp3Data = [];
+  const blockSize = 1152;
+
+  for (let i = 0; i < numSamples; i += blockSize) {
+    const lChunk = left.subarray(i, i + blockSize);
+    const rChunk = right ? right.subarray(i, i + blockSize) : lChunk;
+    const mp3buf = mp3encoder.encodeBuffer(lChunk, rChunk);
+    if (mp3buf.length > 0) mp3Data.push(mp3buf);
+  }
+
+  const end = mp3encoder.flush();
+  if (end.length > 0) mp3Data.push(end);
+
+  return new Blob(mp3Data, { type: 'audio/mp3' });
+}
+
+// ---- Init ----
+updateUI();
+
+})();
+</script>
+
+</body>
+</html>
