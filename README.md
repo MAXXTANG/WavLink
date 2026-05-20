@@ -1,6 +1,6 @@
 # WavLink
 
-**WavLink** is a browser-based audio concatenation tool built by [Studio HAN](https://github.com/your-username). Upload multiple WAV or MP3 files, arrange them in any order, and merge them into a single audio file — all processed locally in your browser. Your files never leave your computer.
+**WavLink** is a browser-based audio concatenation tool built by [Studio HAN](https://github.com/MAXXTANG). Upload multiple WAV or MP3 files, arrange them in any order, and merge them into a single audio file — all processed locally in your browser. Your files never leave your computer.
 
 > Brewing sounds, serving peace.
 
